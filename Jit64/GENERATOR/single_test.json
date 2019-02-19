@@ -1,0 +1,19 @@
+[
+    {
+        "Opcode": "REX.W+ 89 /r",
+        "Instruction": "MOV r/m64, r64",
+        "Op/En": "MR",
+        "Properties": "W, R",
+        "Implicit Read": "",
+        "Implicit Write": "",
+        "Implicit Undef": "",
+        "Useful": "",
+        "Protected": "",
+        "64-bit Mode": "V",
+        "Compat/32-bit-Legacy Mode": "NE",
+        "CPUID Feature Flags": "",
+        "AT&T Mnemonic": "movq",
+        "Preferred": "YES",
+        "Description": "Move r64 to r/m64."
+    }
+]

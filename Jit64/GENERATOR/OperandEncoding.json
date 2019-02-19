@@ -1,0 +1,10 @@
+﻿{
+  "mov": {
+    "MR": [ "ModRM:r/m (w)", "ModRM:reg (r)", null, null ],
+    "RM": [ "ModRM:reg (w)", "ModRM:r/m (r)", null, null ],
+    "FD": [ "AL/AX/EAX/RAX", "Moffs", null, null ],
+    "TD": [ "Moffs (w)", "AL/AX/EAX/RAX", null, null ],
+    "OI": [ "opcode + rd (w)", "imm8/16/32/64", null, null ],
+    "MI": [ "ModRM:r/m (w)", "imm8/16/32/64", null, null ]
+  }
+}

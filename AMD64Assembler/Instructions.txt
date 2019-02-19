@@ -1,0 +1,3 @@
+﻿CALL r/m64 -- r/m -- 0xFF;
+XOR r64, r/m64 -- reg, r/m -- REX.W + 0x33;
+MOV r64, r/m64 -- reg, r/m -- REX.W + 0x8B;

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Common;
 
 namespace MemoryManager.Memory
@@ -23,7 +24,7 @@ namespace MemoryManager.Memory
             }
 
             ThrowNonPositive(length);
-            _pointer = (T*) pointer;
+            _pointer = (T*)pointer;
             _length = length;
             _disposer = disposer;
             // DO NOT use '() => {};' or 'delegate { }' as the default
@@ -44,7 +45,7 @@ namespace MemoryManager.Memory
             _length = length * sizeof(T);
             _disposer = disposer;
         }
-        
+
 
         public Span<T> AsSpan() => new Span<T>(_pointer, _length);
 
@@ -85,7 +86,6 @@ namespace MemoryManager.Memory
         public void Clear()
         {
             // Not calling 'Fill' with 0 to prevent branching and check of size
-            EnsureNotNullAndNotEmpty();
             Unsafe.InitBlockUnaligned(ref Unsafe.AsRef<byte>(_pointer), 0, (uint)_length);
         }
 
@@ -112,24 +112,20 @@ namespace MemoryManager.Memory
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(UnmanagedSpan<T> dest)
         {
-            EnsureNotNullAndNotEmpty();
             Unsafe.CopyBlockUnaligned(dest._pointer, _pointer, (uint)_length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void CopyTo(Span<T> dest)
         {
-            fixed (T* tPtr = dest)
-            {
-                EnsureNotNullAndNotEmpty();
-                Unsafe.CopyBlockUnaligned(tPtr, _pointer, (uint)_length);
-            }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(dest)), ref *(byte*)_pointer, (uint)_length);
         }
 
         public ref T GetPinnableReference() => ref Unsafe.AsRef<T>(_pointer);
+        public T* GetPointer() => _pointer;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IEnumerator<T> GetEnumerator()
+        public Enumerator GetEnumerator()
             => new Enumerator(this);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -173,10 +169,20 @@ namespace MemoryManager.Memory
         public T* AsPointer() => _pointer;
 
         public UnmanagedSpan<T> Slice(int start)
-           => new UnmanagedSpan<T>(_pointer + start, _length - start);
+        {
+            if ((uint)start > (uint)_length)
+                ThrowHelper.ThrowOutOfRange();
+
+            return new UnmanagedSpan<T>(_pointer + start, _length - start);
+        }
 
         public UnmanagedSpan<T> Slice(int start, int length)
-            => new UnmanagedSpan<T>(_pointer + start, length);
+        {
+            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
+                ThrowHelper.ThrowOutOfRange();
+
+            return new UnmanagedSpan<T>(_pointer + start, length);
+        }
 
         public override string ToString() =>
             default(T) is char
@@ -190,6 +196,9 @@ namespace MemoryManager.Memory
         public bool Equals(UnmanagedSpan<T> other)
             => this._pointer == other._pointer && this._length == other._length;
         // Explicitly doesn't compare the disposer
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -207,7 +216,7 @@ namespace MemoryManager.Memory
             _disposer?.Invoke();
         }
 
-        private struct Enumerator : IEnumerator<T>
+        public struct Enumerator : IEnumerator<T>
         {
             private readonly UnmanagedSpan<T> _span;
             private int _offset;
